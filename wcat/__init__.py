@@ -1,4 +1,182 @@
-from clesto import Module_element
+from collections import Counter
+
+
+class Module_element(Counter):
+    """
+    Counter with arithmetic improvements to handle (modular) integer values.
+
+    Class constructed to model free module elements over the ring of
+    (modular) integers.
+
+    Attributes
+    ----------
+    default_torsion : non-negative int or string 'free'
+        An int m sets R = Z/mZ whereas 'free' sets R = Z
+
+    """
+
+    default_torsion = 'free'
+
+    def __init__(self, data=None, torsion=None):
+        # print('initializing as Module_element')
+
+        # check input data: dict with int values
+        if data:
+            if not (isinstance(data, dict) and
+                    all((type(v) is int for v in data.values()))
+                    ):
+                raise TypeError('input must be dict with int values')
+
+        # checking input torsion: positive int or 'free'
+        if torsion is not None:
+            if not (isinstance(torsion, int) and torsion > 0 or
+                    torsion == 'free'
+                    ):
+                raise TypeError("torsion must be a positive int or 'free'")
+
+        # setting torsion
+        m = torsion if torsion else type(self).default_torsion
+        setattr(self, 'torsion', m)
+
+        # initialize element
+        super(Module_element, self).__init__(data)
+
+        self._reduce_rep()
+
+    def __str__(self):
+        if not self:
+            return '0'
+        else:
+            answer = ''
+            for key, value in self.items():
+                if value < -1:
+                    answer += f' - {abs(value)}{key}'
+                elif value == -1:
+                    answer += f' - {key}'
+                elif value == 1:
+                    answer += f' + {key}'
+                elif value > 1:
+                    answer += f' + {value}{key}'
+            if answer[:2] == ' +':
+                answer = answer[3:]
+            if answer[:2] == ' -':
+                answer = answer[1:]
+
+            return answer
+
+    def __add__(self, other):
+        '''The sum of two free module elements.
+
+        >>> Module_element({'a':1, 'b':2}) + Module_element({'a':1})
+        Module_element({'a':2, 'b':2})
+
+        '''
+        self.compare_attributes(other)
+        answer = type(self)(self).copy_attrs_from(self)
+        answer.update(other)
+        answer._reduce_rep()
+        return answer
+
+    def __sub__(self, other):
+        '''The substraction of two free module elements.
+
+        >>> Module_element({'a':1, 'b':2}) - Module_element({'a':1})
+        Module_element({'b':2})
+
+        '''
+        self.compare_attributes(other)
+        answer = type(self)(self).copy_attrs_from(self)
+        answer.subtract(other)
+        answer._reduce_rep()
+        return answer
+
+    def __rmul__(self, c):
+        '''The scaling by c of a free module element.
+
+        >>> 3*Module_element({'a':1, 'b':2})
+        Module_element({'a':3, 'b':6})
+
+        '''
+        if not isinstance(c, int):
+            raise TypeError(f'can not act by non-int of type {type(c)}')
+
+        scaled = {k: c * v for k, v in self.items()}
+        answer = type(self)(scaled).copy_attrs_from(self)
+        return answer
+
+    def __neg__(self):
+        '''The additive inverse of a free module element.
+
+        >>> -Module_element({'a':1, 'b':2})
+        Module_element({'a':-1, 'b':-22})
+
+        '''
+        return self.__rmul__(-1)
+
+    def __iadd__(self, other):
+        '''The in place addition of two free module elements.
+
+        >>> x = Module_element({'a':1, 'b':2})
+        >>> x += Module_element({'a':3, 'b':6})
+        Module_element({'a':4, 'b':8})
+
+        '''
+        self.compare_attributes(other)
+        self.update(other)
+        self._reduce_rep()
+        return self
+
+    def __isub__(self, other):
+        '''The in place addition of two free module elements.
+
+        >>> x = Module_element({'a':1, 'b':2})
+        >>> x -= Module_element({'a':3, 'b':6})
+        Module_element({'a':-2, 'b':-4})
+
+        '''
+        self.compare_attributes(other)
+        self.subtract(other)
+        self._reduce_rep()
+        return self
+
+    def _reduce_rep(self):
+        '''The preferred representative of the free module element.
+
+        It reduces all values mod n if torsion is n and removes
+        key:value pairs with value = 0.
+
+        >>> Module_element({'a':1, 'b':2, 'c':0})
+        Module_element({'a':1, 'b':2})
+
+        '''
+        # print('reducing as Module_element')
+        # reducing coefficients mod torsion
+        if self.torsion != 'free':
+            for key, value in self.items():
+                self[key] = value % self.torsion
+
+        # removing key:value pairs with value = 0
+        zeros = [k for k, v in self.items() if not v]
+        for key in zeros:
+            del self[key]
+
+    def set_torsion(self, m):
+        '''...'''
+        setattr(self, 'torsion', m)
+        self._reduce_rep()
+        return self
+
+    def compare_attributes(self, other):
+        '''...'''
+        if self.__dict__ != other.__dict__:
+            raise AttributeError('not the same attributes')
+
+    def copy_attrs_from(self, other):
+        '''...'''
+        for attr, value in other.__dict__.items():
+            setattr(self, attr, value)
+        self._reduce_rep()
+        return(self)
 
 
 class Simplex(tuple):
