@@ -1,0 +1,8 @@
+README.md
+setup.py
+wcat/__init__.py
+wcat.egg-info/PKG-INFO
+wcat.egg-info/SOURCES.txt
+wcat.egg-info/dependency_links.txt
+wcat.egg-info/not-zip-safe
+wcat.egg-info/top_level.txt

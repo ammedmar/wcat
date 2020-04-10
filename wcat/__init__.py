@@ -9,7 +9,7 @@ class Simplex(tuple):
 
     def __str__(self):
         '''...'''
-        return super().__str__(self).replace(', ', ',')
+        return super(Simplex, self).__str__().replace(', ', ',')
 
     def __lt__(self, other):
         '''...'''
