@@ -77,59 +77,51 @@ class SADC_element(Module_element):
         return SADC_element(dict(sorted_data))
 
 
-class Mu_element:
+class Mu_element(dict):
     '''...'''
 
     def __init__(self, minus, plus):
         '''two tuples of SADC_element'''
-        # TODO: perform input check
 
-        self.minus = minus
-        self.plus = plus
-
-    def __eq__(self, other):
-        if isinstance(other, SADC_element):
-            return self.__dict__ == other.__dict__
-        return NotImplemented
-
-    def __hash__(self):
-        '''...'''
-        return hash(tuple(sorted(self.__dict__.items())))
+        self['minus'] = minus
+        self['plus'] = plus
 
     def __repr__(self):
         '''...'''
-        return f'Mu_element({self.minus}, {self.plus})'
+        return f'Mu_element({self["minus"]}, {self["plus"]})'
 
     def __str__(self):
         string = ''.join((f'{str(m)} | {str(p)} \n' for m, p in
-                          zip(self.minus, self.plus)))
+                          zip(self['minus'], self['plus'])))
         return string.replace(', ', ',')
 
     @property
     def dimension(self):
         '''...'''
-        return len(self.minus) - 1
+        return len(self['minus']) - 1
 
     def source(self, k):
         '''...'''
-        return Mu_element(self.minus[:k + 1], self.plus[:k] + (self.minus[k],))
+        return Mu_element(self['minus'][:k + 1],
+                          self['plus'][:k] + (self['minus'][k],))
 
     def target(self, k):
         '''...'''
-        return Mu_element(self.minus[:k] + (self.plus[k],), self.plus[:k + 1])
+        return Mu_element(self['minus'][:k] +
+                          (self['plus'][k],), self['plus'][:k + 1])
 
     def compose(self, other, k):
         '''...'''
         if self.target(k) != other.source(k):
             raise TypeError(f'corresponding target & source must be equal')
 
-        p, q = len(self.minus), len(other['-'])
-        c = (self.target(k)['-'] + (SADC_element(),) * max(0, abs(q - p)),
-             self.target(k).plus) + (SADC_element(),) * max(0, abs(q - p))
-        a = ((self.minus + (SADC_element(),) * max(0, q - p)),
-             (self.plus + (SADC_element(),) * max(0, q - p)))
-        b = ((other['-'] + (SADC_element(),) * max(0, p - q)),
-             (other.plus + (SADC_element(),) * max(0, p - q)))
+        p, q = len(self['minus']), len(other['minus'])
+        c = (self.target(k)['minus'] + (SADC_element(),) * max(0, abs(q - p)),
+             self.target(k)['plus']) + (SADC_element(),) * max(0, abs(q - p))
+        a = ((self['minus'] + (SADC_element(),) * max(0, q - p)),
+             (self['plus'] + (SADC_element(),) * max(0, q - p)))
+        b = ((other['minus'] + (SADC_element(),) * max(0, p - q)),
+             (other['plus'] + (SADC_element(),) * max(0, p - q)))
         return Mu_element(
             (x + y - z for x, y, z in zip(a[0], b[0], c[0])),
             (x + y - z for x, y, z in zip(a[1], b[1], c[1])))
@@ -137,6 +129,9 @@ class Mu_element:
     def decompose(self):
         '''...'''
         def decomp(bracket):
+            '''A bracket is a list of the ordered elements to be decomposed.
+            At each step we replace an element in the bracket by a bracket of 
+            its codimension 1 decomposition w/r to its near neighbor.'''
             if min(s.dimension for s in bracket) == 1 or len(bracket) == 1:
                 return bracket
             bracket = [[term] for term in bracket]
@@ -145,9 +140,9 @@ class Mu_element:
                 max_x = sorted(x, key=lambda x_i: x_i.dimension)[-1]
                 max_y = sorted(y, key=lambda y_i: y_i.dimension)[-1]
                 comp_deg = min(max_x.dimension, max_y.dimension) - 1
-                forward_x = (max_x.atom().plus[comp_deg] + SADC_element(
+                forward_x = (max_x.atom()['plus'][comp_deg] + SADC_element(
                     {spx: 1 for spx in filter(lambda x_i: x_i != max_x, x)}))
-                backward_y = (max_y.atom().minus[comp_deg] + SADC_element(
+                backward_y = (max_y.atom()['minus'][comp_deg] + SADC_element(
                     {spx: 1 for spx in filter(lambda y_i: y_i != max_y, y)}))
                 h = forward_x - backward_y
                 bracket[i] = sorted(x + [k for k, v in h.items() if v < 0])
@@ -155,5 +150,5 @@ class Mu_element:
 
             return [decomp(subbracket) for subbracket in bracket]
 
-        bracket = list(self.minus[-1].keys())
+        bracket = list(self['minus'][-1].keys())
         return decomp(bracket)
