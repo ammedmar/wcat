@@ -1,0 +1,5 @@
+# notebooks
+notebooks/.ipynb_checkpoints
+# cache
+wcat/__pycache__
+.DS_Store

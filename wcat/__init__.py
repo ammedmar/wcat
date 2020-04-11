@@ -293,22 +293,25 @@ class Mu_element(dict):
         if self.target(k) != other.source(k):
             raise TypeError(f'corresponding target & source must be equal')
 
+        over = self.target(k)
+        # padding with 0s
         p, q = len(self['minus']), len(other['minus'])
-        c = (self.target(k)['minus'] + (SADC_element(),) * max(0, abs(q - p)),
-             self.target(k)['plus']) + (SADC_element(),) * max(0, abs(q - p))
-        a = ((self['minus'] + (SADC_element(),) * max(0, q - p)),
-             (self['plus'] + (SADC_element(),) * max(0, q - p)))
-        b = ((other['minus'] + (SADC_element(),) * max(0, p - q)),
-             (other['plus'] + (SADC_element(),) * max(0, p - q)))
+        a, b, c = {}, {}, {}
+        a['m'] = (self['minus'] + (SADC_element(),) * max(0, q - p))
+        a['p'] = (self['plus'] + (SADC_element(),) * max(0, q - p))
+        b['m'] = (other['minus'] + (SADC_element(),) * max(0, p - q))
+        b['p'] = (other['plus'] + (SADC_element(),) * max(0, p - q))
+        c['m'] = (over['minus'] + (SADC_element(),) * (max(p, q) - k - 1))
+        c['p'] = (over['plus'] + (SADC_element(),) * (max(p, q) - k - 1))
         return Mu_element(
-            (x + y - z for x, y, z in zip(a[0], b[0], c[0])),
-            (x + y - z for x, y, z in zip(a[1], b[1], c[1])))
+            (x + y - z for x, y, z in zip(a['m'], b['m'], c['m'])),
+            (x + y - z for x, y, z in zip(a['p'], b['p'], c['p'])))
 
     def decompose(self):
         '''...'''
         def decomp(bracket):
             '''A bracket is a list of the ordered elements to be decomposed.
-            At each step we replace an element in the bracket by a bracket of 
+            At each step we replace an element in the bracket by a bracket of
             its codimension 1 decomposition w/r to its near neighbor.'''
             if min(s.dimension for s in bracket) == 1 or len(bracket) == 1:
                 return bracket
