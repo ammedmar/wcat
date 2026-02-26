@@ -3,3 +3,6 @@ notebooks/.ipynb_checkpoints
 # cache
 wcat/__pycache__
 .DS_Store
+wcat.egg-info/
+build/
+wcat/.ipynb_checkpoints/
